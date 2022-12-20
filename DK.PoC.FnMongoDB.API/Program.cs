@@ -8,41 +8,31 @@ using DK.PoC.FnMongoDB.API.MongoCollectionSettings;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 
-namespace DK.PoC.FnMongoDB.API
-{
+var host = new HostBuilder()
+    .ConfigureFunctionsWorkerDefaults()
 
-    internal class Program
+    .ConfigureServices(services =>
     {
-        static void Main(string[] args)
+        services.Configure<MongoDBSettings>(
+            option =>
+            {
+                option.MdbConnectionstring = Environment.GetEnvironmentVariable("MongoDBAtlasConnectionString");
+                option.DatabaseName = Environment.GetEnvironmentVariable("DatabaseName");
+                option.ContactCollection = Environment.GetEnvironmentVariable("ContactCollection");
+
+                option.mongoDBClientSetting = MongoClientSettings.FromConnectionString(option.MdbConnectionstring);
+                option.mongoDBClientSetting.LinqProvider = LinqProvider.V3;
+                option.mongoClient = new MongoClient(option.mongoDBClientSetting);
+            });
+
+        services.AddHttpClient("DK", configuration => //Just to showcase how to inject HTTP Factory
         {
-            FunctionsDebugger.Enable();
+            configuration.BaseAddress = new Uri(Environment.GetEnvironmentVariable("DKUrl"));
+        });
+        services.AddTransient<IDemoApp, DemoApp>(); //Just to showcase how to inject Repository pattern to access DB
+        //services.AddHttpClient();
+        //services.AddScoped();
+    })
+    .Build();
 
-            var host = new HostBuilder()
-                .ConfigureFunctionsWorkerDefaults()
-                .ConfigureServices(services =>
-                {
-                    services.Configure<ContactSettings>(
-                        option => {
-                            option.MdbConnectionstring = Environment.GetEnvironmentVariable("MongoDBAtlasConnectionString");
-                            option.DatabaseName = Environment.GetEnvironmentVariable("DatabaseName");
-                            option.ContactCollection = Environment.GetEnvironmentVariable("ContactCollection");
-
-                            option.mongoDBClientSetting = MongoClientSettings.FromConnectionString(option.MdbConnectionstring);
-                            option.mongoDBClientSetting.LinqProvider = LinqProvider.V3;
-                            option.mongoClient = new MongoClient(option.mongoDBClientSetting);
-                        });
-
-                    services.AddHttpClient("DK", configuration =>
-                    {
-                        configuration.BaseAddress = new Uri(Environment.GetEnvironmentVariable("DKUrl"));
-                    });
-                    services.AddTransient<IDemoApp, DemoApp>();
-                    //services.AddHttpClient();
-                    //services.AddScoped();
-                })
-                .Build();
-
-            host.Run();
-        }
-    }
-}
+host.Run();

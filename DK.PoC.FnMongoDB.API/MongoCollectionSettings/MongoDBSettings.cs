@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace DK.PoC.FnMongoDB.API.MongoCollectionSettings
 {
-    public class ContactSettings
+    public class MongoDBSettings
     {
         public MongoClientSettings mongoDBClientSetting { get; set; }
         public MongoClient mongoClient { get; set; }
